@@ -8,7 +8,7 @@ cd "$D" || exit 1
 [ -f undertale.port ] || { echo "Undertale: no undertale.port in $D (run undertale-port.sh from FakeR36S-Undertale)"; exit 1; }
 LOG=/home/player/.config/fakers36s/undertale.log
 mkdir -p "$D/save" "${LOG%/*}"
-[ "$(wc -c < "$LOG" 2>/dev/null || echo 0)" -gt 300000 ] && : > "$LOG"
+[ -f "$LOG" ] && [ "$(wc -c < "$LOG")" -gt 300000 ] && : > "$LOG"
 
 export HOME=/home/player SDL_VIDEODRIVER=kmsdrm
 . /etc/profile.d/sdl_controller.sh 2>/dev/null

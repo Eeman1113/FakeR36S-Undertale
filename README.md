@@ -45,7 +45,7 @@ gmloader-next ships Android's `libm.so` from an arm64 build, and its 32-bit code
 
 ## Patches to gmloader-next
 
-`patches/` is applied to gmloader-next before the build: the save state and FPS buttons (`0001`), a log line showing the audio format the game asks for and gets (`0002`), and the legacy joystick buttons mapped from GameMaker 1.x's old DirectInput numbering, so confirm is A, cancel is B and menu is Y (`0003`; without it Undertale confirmed on X).
+`patches/` is applied to gmloader-next before the build: the save state and FPS buttons (`0001`), audio at 48 kHz with SDL resampling, plus a log line with the format the game asks for (`0002`; the A23 codec whines at the 22 kHz Undertale asks for, and the old write loop kept a core busy waiting for an empty queue), and the legacy joystick buttons mapped from GameMaker 1.x's old DirectInput numbering, so confirm is A, cancel is B and menu is Y (`0003`; without it Undertale confirmed on X).
 
 ## Credits
 
