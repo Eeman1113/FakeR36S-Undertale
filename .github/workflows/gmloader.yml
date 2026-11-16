@@ -75,8 +75,9 @@ jobs:
           curl -fsSL -o img.zip https://dl.google.com/android/repository/sys-img/android/armeabi-v7a-24_r07.zip
           unzip -q img.zip armeabi-v7a/system.img
           debugfs -R 'dump /lib/libm.so libm.so' armeabi-v7a/system.img
-          n=$(arm-linux-gnueabihf-objdump -d libm.so | grep -c -E '\s(vrint[amnpxz]|vcvt[anpm]\.|vmaxnm|vminnm|vsel|lda|stl)' || true)
-          echo "ARMv8-only instructions in libm.so: $n"; test "$n" = 0
+          # the exact file tested on the console (a disassembler count is noisy: literal pools decode as code)
+          arm-linux-gnueabihf-objdump -d libm.so | grep -E '\s(vrint[amnpxz]|vcvt[anpm]\.|vmaxnm|vminnm|vsel|lda|stl)' || true
+          echo "0b8893c6470034862bc571bf940bb65b7c31cedddfe91ea6578dc7a50efeb4e8  libm.so" | sha256sum -c
           sha256sum libm.so | tee libm.so.sha256
           rm -rf img.zip armeabi-v7a
 
