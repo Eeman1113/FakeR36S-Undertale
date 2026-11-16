@@ -1,0 +1,9 @@
+# game files never go in this repo
+data.win
+game.unx
+game.droid
+*.ogg
+*.port
+*.exe
+*.dll
+.DS_Store
