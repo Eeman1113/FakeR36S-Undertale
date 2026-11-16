@@ -1,0 +1,15 @@
+diff --git a/gmloader/gamepad.cpp b/gmloader/gamepad.cpp
+index d612183..87602e8 100644
+--- a/gmloader/gamepad.cpp
++++ b/gmloader/gamepad.cpp
+@@ -277,6 +277,10 @@ ABI_ATTR void joystick_check_button(RValue *ret, void *self, void *other, int ar
+     ret->kind = VALUE_REAL;
+     int id = YYGetInt32(args, 0);
+     int btn = translateButton(args, 1);
++    // FakeR36S: the legacy joystick API numbers buttons from 1 (1 = A), like joystick ids;
++    // gp_* constants are already translated to 0-based above. Fixes Undertale's A/B/X being shifted.
++    if (YYGetInt32(args, 1) < (int)gp_face1 && btn >= 1)
++        btn -= 1;
+     if (!IS_JOYSTICK_BOUNDS || !IS_BTN_BOUNDS) {
+         ret->rvalue.val = 0.0f;
+         return;
