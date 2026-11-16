@@ -4,7 +4,7 @@ UNDERTALE on the fake R36S / GA36-MB handheld (Allwinner A23, 32-bit ARM, Mali-4
 
 PortMaster's [Undertale port](https://github.com/PortsMaster/PortMaster-New/tree/main/ports/undertale) is 64-bit only. All the pieces for 32-bit already existed though: [gmloader-next](https://github.com/PortsMaster/gmloader-next) builds for armhf, and the GameMaker runner in PortMaster's package carries a 32-bit ARM copy. This repo puts them together:
 
-- **CI** builds gmloader-next for armhf with PortMaster's own recipe, pinned to one commit, and publishes it on the [gmloader release](https://github.com/Eeman1113/FakeR36S-Undertale/releases/tag/gmloader).
+- **CI** builds gmloader-next for armhf with PortMaster's own recipe, pinned to one commit, with the patches in `patches/`, and publishes it with an ARMv7 `libm.so` on the [gmloader release](https://github.com/Eeman1113/FakeR36S-Undertale/releases/tag/gmloader).
 - **`undertale-port.sh`** packs your copy of the game with the 32-bit runner on your computer and puts it on the card with a menu entry.
 - **`port/run.sh`** is the launcher on the handheld: full CPU while playing, Select+Start quits.
 
@@ -32,9 +32,20 @@ The game reads the gamepad itself, no keyboard mapping needed.
 | A | Confirm |
 | B | Cancel |
 | X / Y | Menu |
+| Select + R1 | Save state |
+| Select + L1 | Load state |
+| Select + B | Show / hide the FPS counter |
 | Select + Start | Quit (back to EmulationStation) |
 
-Saves are in `ports/undertale/save`, the log in `.config/fakers36s/undertale.log`.
+Save states use GameMaker's own `game_save` / `game_load` (rooms, characters and story flags), one slot, kept in `ports/undertale/save/fakers36s.state` so they survive a restart. The game's own save points work as normal next to them. Saves are in `ports/undertale/save`, the log in `.config/fakers36s/undertale.log`.
+
+## Why a different libm
+
+gmloader-next ships Android's `libm.so` from an arm64 build, and its 32-bit code uses ARMv8-only instructions (`vrinta`, `vselgt` and friends). Every other handheld PortMaster targets has an ARMv8 CPU, so nobody noticed. The A23 is a real ARMv7 Cortex-A7, and Undertale died with an illegal instruction as soon as it set up sound. CI pulls bionic's `libm.so` built for ARMv7 out of Google's Android 7.0 armeabi-v7a emulator image, checks it has no ARMv8 instructions, and publishes it next to the loader.
+
+## Patches to gmloader-next
+
+`patches/` is applied to gmloader-next before the build: the save state and FPS buttons (`0001`), and a log line showing the audio format the game asks for and gets (`0002`).
 
 ## Credits
 

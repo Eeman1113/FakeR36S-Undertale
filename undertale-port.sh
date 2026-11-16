@@ -33,9 +33,15 @@ curl -fsSL -o "$WORK/gmloadernext.armhf.sha256" "$REL/gmloadernext.armhf.sha256"
     || { echo "gmloadernext.armhf checksum mismatch" >&2; exit 1; }
 curl -fsSL -o "$WORK/LICENSE.gmloader-next.md" "$REL/LICENSE.gmloader-next.md"
 mkdir -p "$WORK/lib/armeabi-v7a"
-for f in libc++_shared.so libcompiler_rt.so libm.so; do
+for f in libc++_shared.so libcompiler_rt.so; do
     curl -fsSL -o "$WORK/lib/armeabi-v7a/$f" "$GML_RAW/lib/armeabi-v7a/$f"
 done
+# gmloader-next's libm.so is built for ARMv8 and crashes an ARMv7 Cortex-A7 (SIGILL in Sound_Prepare);
+# the release carries bionic's ARMv7 libm from Google's Android 7.0 armeabi-v7a image instead
+curl -fsSL -o "$WORK/lib/armeabi-v7a/libm.so" "$REL/libm.so"
+curl -fsSL -o "$WORK/libm.so.sha256" "$REL/libm.so.sha256"
+( cd "$WORK/lib/armeabi-v7a" && { sha256sum -c ../../libm.so.sha256 2>/dev/null || shasum -a 256 -c ../../libm.so.sha256; } ) >/dev/null \
+    || { echo "libm.so checksum mismatch" >&2; exit 1; }
 
 echo "Packing your game with the 32-bit runner..."
 python3 - "$WORK/undertale.port" "$GAME" "$WORK/out.port" <<'PY'
@@ -71,6 +77,7 @@ print(f'  game data + {n} files ({sum(1 for x in os.listdir(game) if x.endswith(
 PY
 
 D=$HOMEDIR/ports/undertale
+rm -f "$D/lib/armeabi-v7a/libm.so.armv8"
 mkdir -p "$D/save" "$D/lib/armeabi-v7a" "$D/licenses" "$HOMEDIR/.local/share/applications" "$HOMEDIR/.local/share/icons"
 cp "$WORK/out.port" "$D/undertale.port"
 cp "$WORK/gmloadernext.armhf" "$D/"; chmod +x "$D/gmloadernext.armhf"
@@ -100,7 +107,7 @@ cat > "$HOMEDIR/.local/share/applications/undertale.puppy" <<PUP
 NAME=Undertale
 CATEGORY=Ports
 COMMAND=/home/player/ports/undertale/run.sh
-DESCRIPTION=The friendly RPG where nobody has to die. A confirms, B cancels, X/Y menu. Select+Start quits.
+DESCRIPTION=The friendly RPG where nobody has to die. Select+R1 save state, Select+L1 load, Select+B FPS, Select+Start quits.
 ICON=/home/player/.local/share/icons/undertale.png
 PUP
 echo "Done: Undertale is in Ports on the card."

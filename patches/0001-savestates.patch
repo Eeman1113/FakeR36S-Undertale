@@ -1,0 +1,92 @@
+diff --git a/gmloader/input.cpp b/gmloader/input.cpp
+index 5b535f1..375e710 100644
+--- a/gmloader/input.cpp
++++ b/gmloader/input.cpp
+@@ -7,6 +7,8 @@
+ #include "so_util.h"
+ #include "libyoyo.h"
+ #include "configuration.h"
++#include <string>
++#include <unistd.h>
+ 
+ int app_in_focus = 0;
+ int mouse_has_warped = 0;
+@@ -175,6 +177,60 @@ ABI_ATTR void RegisterAndroidKeyEvent(int state, int key)
+ 
+ // This hook disabled the majority of the input code, leaving this up to be implemented
+ // in a per-platform basis. Check sdl2_media.c as an example.
++
++// FakeR36S: Select+R1 saves a state, Select+L1 loads it, with the runner's own game_save/game_load
++// (whole game: rooms, instances, globals); Select+B toggles the runner's FPS overlay
++// (show_debug_overlay). Checked once per step, at the start of the step.
++typedef ABI_ATTR void (*fr_gml_func)(RValue *ret, void *self, void *other, int argc, RValue *args);
++static fr_gml_func fr_game_save = NULL, fr_game_load = NULL, fr_debug_overlay = NULL;
++static const char *FR_STATE = "fakers36s.state";
++
++static void fr_state_call(fr_gml_func f, const char *what)
++{
++    if (f == NULL) {
++        warning("[FakeR36S] %s: not available in this runner\n", what);
++        return;
++    }
++    RValue ret = {}, arg = {};
++    YYCreateStringHelper(&arg, FR_STATE);
++    f(&ret, NULL, NULL, 1, &arg);
++    warning("[FakeR36S] %s (%s)\n", what, FR_STATE);
++}
++
++static void fr_state_buttons()
++{
++    static int was_save = 0, was_load = 0, was_fps = 0, fps_on = 0;
++    int save = 0, load = 0, fps = 0;
++    for (int i = 0; i < MAX_GAMEPADS; i++) {
++        Gamepad *g = &yoyo_gamepads[i];
++        if (!g->is_available || g->buttons[8] <= 0)   // 8: Select (back)
++            continue;
++        save |= g->buttons[5] > 0;                     // 5: R1
++        load |= g->buttons[4] > 0;                     // 4: L1
++        fps |= g->buttons[1] > 0;                      // 1: B
++    }
++    if (fps && !was_fps && fr_debug_overlay != NULL) {
++        RValue ret = {}, arg = {};
++        fps_on = !fps_on;
++        arg.kind = VALUE_REAL;
++        arg.rvalue.val = fps_on ? 1.0 : 0.0;
++        fr_debug_overlay(&ret, NULL, NULL, 1, &arg);
++        warning("[FakeR36S] FPS overlay %s\n", fps_on ? "on" : "off");
++    }
++    was_fps = fps;
++    if (save && !was_save)
++        fr_state_call(fr_game_save, "state saved");
++    if (load && !was_load) {
++        std::string path = gmloader_config.save_dir + "/" + FR_STATE;
++        if (access(path.c_str(), F_OK) == 0)
++            fr_state_call(fr_game_load, "state loaded");
++        else
++            warning("[FakeR36S] no saved state yet (%s)\n", path.c_str());
++    }
++    was_save = save;
++    was_load = load;
++}
++
+ ABI_ATTR void IO_Start_Step_hook()
+ {
+     if (g_MousePosX[0] < 0) g_MousePosX[0] = 0;
+@@ -184,6 +240,7 @@ ABI_ATTR void IO_Start_Step_hook()
+ 
+     *g_IOFrameCount = *g_IOFrameCount + 1;
+     GamepadUpdate();
++    fr_state_buttons();
+ }
+ 
+ void patch_input(so_module *mod)
+@@ -191,6 +248,9 @@ void patch_input(so_module *mod)
+     hook_symbol(mod, "_Z23RegisterAndroidKeyEventii", (uintptr_t)&RegisterAndroidKeyEvent, 1);
+     hook_symbol(mod, "_Z23RegisterAndroidKeyEventiiii", (uintptr_t)&RegisterAndroidKeyEvent, 1);
+     hook_symbol(mod, "_Z13IO_Start_Stepv", (uintptr_t)&IO_Start_Step_hook, 1);
++    fr_game_save = (fr_gml_func)so_symbol(mod, "_Z10F_GameSaveR6RValueP9CInstanceS2_iPS_");
++    fr_game_load = (fr_gml_func)so_symbol(mod, "_Z10F_GameLoadR6RValueP9CInstanceS2_iPS_");
++    fr_debug_overlay = (fr_gml_func)so_symbol(mod, "_Z18F_ShowDebugOverlayR6RValueP9CInstanceS2_iPS_");
+ }
+ 
+ static Uint32 prev_mouse_state = 0;
