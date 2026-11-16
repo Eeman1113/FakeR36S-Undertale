@@ -31,7 +31,7 @@ The game reads the gamepad itself, no keyboard mapping needed.
 | D-pad / stick | Move |
 | A | Confirm |
 | B | Cancel |
-| X / Y | Menu |
+| Y | Menu |
 | Select + R1 | Save state |
 | Select + L1 | Load state |
 | Select + B | Show / hide the FPS counter |
@@ -45,7 +45,7 @@ gmloader-next ships Android's `libm.so` from an arm64 build, and its 32-bit code
 
 ## Patches to gmloader-next
 
-`patches/` is applied to gmloader-next before the build: the save state and FPS buttons (`0001`), a log line showing the audio format the game asks for and gets (`0002`), and the legacy joystick buttons counted from 1 as GameMaker does (`0003`; without it A, B and X were shifted by one in Undertale).
+`patches/` is applied to gmloader-next before the build: the save state and FPS buttons (`0001`), a log line showing the audio format the game asks for and gets (`0002`), and the legacy joystick buttons mapped from GameMaker 1.x's old DirectInput numbering, so confirm is A, cancel is B and menu is Y (`0003`; without it Undertale confirmed on X).
 
 ## Credits
 

@@ -1,0 +1,19 @@
+diff --git a/gmloader/gamepad.cpp b/gmloader/gamepad.cpp
+index d612183..106abae 100644
+--- a/gmloader/gamepad.cpp
++++ b/gmloader/gamepad.cpp
+@@ -277,6 +277,14 @@ ABI_ATTR void joystick_check_button(RValue *ret, void *self, void *other, int ar
+     ret->kind = VALUE_REAL;
+     int id = YYGetInt32(args, 0);
+     int btn = translateButton(args, 1);
++    // FakeR36S: the legacy joystick API numbers buttons from 1 in the old DirectInput pad order, where
++    // GameMaker 1.x games put confirm on 2 and cancel on 1 (Undertale: Z=2, X=1, C=4). Map them so
++    // confirm is A, cancel is B and menu is Y, then 5+ follow the gamepad order (L1, R1, ...).
++    // gp_* constants are already translated to 0-based above and are left alone.
++    if (YYGetInt32(args, 1) < (int)gp_face1 && btn >= 1) {
++        static const int legacy[] = { -1, 1 /* B */, 0 /* A */, 2 /* X */, 3 /* Y */ };
++        btn = (btn <= 4) ? legacy[btn] : btn - 1;
++    }
+     if (!IS_JOYSTICK_BOUNDS || !IS_BTN_BOUNDS) {
+         ret->rvalue.val = 0.0f;
+         return;
